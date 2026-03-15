@@ -90,5 +90,26 @@ async def get_author_info(author_name: str) -> Dict[str, Any]:
     except Exception as e:
         return {"error": f"An error occurred while retrieving author information: {str(e)}"}
 
+def _kill_stale_instances():
+    """杀掉已有的同名进程，防止多实例堆积吃内存。"""
+    import os, signal, subprocess
+    my_pid = os.getpid()
+    script_name = os.path.basename(__file__)
+    try:
+        result = subprocess.run(
+            ["pgrep", "-f", script_name],
+            capture_output=True, text=True, timeout=5,
+        )
+        for line in result.stdout.strip().split("\n"):
+            if not line.strip():
+                continue
+            pid = int(line.strip())
+            if pid != my_pid:
+                os.kill(pid, signal.SIGTERM)
+    except Exception:
+        pass
+
+
 if __name__ == "__main__":
+    _kill_stale_instances()
     mcp.run()
